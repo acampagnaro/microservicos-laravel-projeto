@@ -1,0 +1,85 @@
+version: "3"
+
+services:
+
+    app:
+        build: .docker/app
+        container_name: microservicos-video-app
+        environment:
+          - _DB_CONNECTION=mysql
+          - _DB_HOST=db
+          - _DB_PORT=3306
+          - _DB_DATABASE=microservicos_code_video
+          - _DB_DATABASE_TEST=microservicos_code_video_test
+          - _DB_USERNAME=root
+          - _DB_PASSWORD=root
+          - CHOKIDAR_USEPOLLING=true
+        entrypoint: dockerize -template ./.docker/app/.env:backend/.env -template ./.docker/app/.env.testing:backend/.env.testing  -wait tcp://db:3306  -timeout 60s ./.docker/app/entrypoint.sh
+        ports:
+          - "3000:3000"
+          - "35729:35729"
+        volumes:
+          - .:/var/www
+        networks:
+          - app-network
+        depends_on:
+          - db
+          - redis
+
+
+
+
+    nginx:
+        build: .docker/nginx
+        container_name: microservicos-video-nginx
+        environment:
+          - PHP_FPM_HOST=app
+          - PHP_FPM_PORT=9000
+        entrypoint:  dockerize -template ./.docker/nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf -wait tcp://app:9000  --timeout 120s nginx -g "daemon off;"
+        restart: always
+        tty: true
+        ports:
+          - "8000:80"
+        volumes:
+          - .:/var/www
+        networks:
+          - app-network
+        depends_on:
+          - app
+
+
+    redis:
+        image: redis:alpine
+        container_name: microservicos-video-redis
+        expose:
+          - 6379
+        networks:
+          - app-network
+
+    db:
+        image: mysql:5.7
+        command: --innodb-use-native-aio=0
+        container_name: microservicos-video-db
+        restart: always
+        tty: true
+        volumes:
+          - ./.docker/dbdata:/var/lib/mysql
+          - ./.docker/mysql:/docker-entrypoint-initdb.d
+        ports:
+          - "3336:3306"
+        environment:
+          - MYSQL_DATABASE=microservicos_code_video
+          - MYSQL_ROOT_PASSWORD=root
+          - MYSQL_ROOT=root
+        networks:
+          - app-network
+
+
+
+networks:
+    app-network:
+        driver: bridge
+
+
+
+
