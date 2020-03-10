@@ -81,9 +81,7 @@
 
             <div class="content">
                 <div class="title m-b-md">
-                    Laravel 6.0 Docker </br>
-                    Microserviços na Prática! </br>
-                    Paulo Soares
+                    Laravel 6.0 Com Docker </br>
                 </div>
 
             </div>
